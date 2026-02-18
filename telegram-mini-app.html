@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Trading Bot - Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+            color: white;
+        }
+        
+        .btn-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .trade-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .trade-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .trade-symbol {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .trade-profit {
+            font-weight: bold;
+        }
+        
+        .profit-positive {
+            color: #38ef7d;
+        }
+        
+        .profit-negative {
+            color: #f45c43;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-success {
+            background: rgba(56, 239, 125, 0.2);
+            color: #38ef7d;
+        }
+        
+        .status-pending {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+        
+        .status-failed {
+            background: rgba(244, 92, 67, 0.2);
+            color: #f45c43;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            opacity: 0.7;
+        }
+        
+        .signal-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .signal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .signal-action {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .action-buy {
+            background: rgba(56, 239, 125, 0.3);
+            color: #38ef7d;
+        }
+        
+        .action-sell {
+            background: rgba(244, 92, 67, 0.3);
+            color: #f45c43;
+        }
+        
+        .action-hold {
+            background: rgba(255, 193, 7, 0.3);
+            color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Crypto Trading Bot</h1>
+            <p>AI-powered автоматическая торговля</p>
+        </div>
+        
+        <div class="card">
+            <h3 style="margin-bottom: 15px;">📊 Статистика</h3>
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <div class="stat-label">Баланс</div>
+                    <div class="stat-value" id="balance">$0.00</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Прибыль</div>
+                    <div class="stat-value" id="profit">$0.00</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Сделок</div>
+                    <div class="stat-value" id="trades">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Успешность</div>
+                    <div class="stat-value" id="successRate">0%</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3 style="margin-bottom: 15px;">🎮 Управление</h3>
+            <button class="btn btn-success" id="startBtn">🚀 Запустить бота</button>
+            <button class="btn btn-danger" id="stopBtn">⏹️ Остановить бота</button>
+            <button class="btn btn-info" id="analyzeBtn">📊 Анализ рынка</button>
+            <button class="btn btn-primary" id="signalsBtn">📡 Торговые сигналы</button>
+        </div>
+        
+        <div class="card">
+            <h3 style="margin-bottom: 15px;">💼 Последние сделки</h3>
+            <div class="trade-list" id="tradesList">
+                <div class="loading">Загрузка...</div>
+            </div>
+        </div>
+        
+        <div class="card" id="signalsCard" style="display: none;">
+            <h3 style="margin-bottom: 15px;">📡 Торговые сигналы</h3>
+            <div id="signalsList">
+                <div class="loading">Генерация сигналов...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        const API_URL = 'http://localhost:5000/api';
+        
+        async function fetchStats() {
+            try {
+                const response = await fetch(`${API_URL}/dashboard/stats`);
+                const data = await response.json();
+                
+                document.getElementById('balance').textContent = `$${data.balance}`;
+                document.getElementById('profit').textContent = `$${data.totalProfit}`;
+                document.getElementById('trades').textContent = data.totalTrades;
+                document.getElementById('successRate').textContent = `${data.successRate}%`;
+            } catch (error) {
+                console.error('Ошибка загрузки статистики:', error);
+            }
+        }
+        
+        async function fetchTrades() {
+            try {
+                const response = await fetch(`${API_URL}/trades?limit=10`);
+                const trades = await response.json();
+                
+                const tradesList = document.getElementById('tradesList');
+                
+                if (trades.length === 0) {
+                    tradesList.innerHTML = '<div class="loading">Сделок пока нет</div>';
+                    return;
+                }
+                
+                tradesList.innerHTML = trades.map(trade => `
+                    <div class="trade-item">
+                        <div>
+                            <div class="trade-symbol">${trade.symbol}</div>
+                            <span class="status-badge status-${trade.status}">${trade.status}</span>
+                        </div>
+                        <div class="trade-profit ${parseFloat(trade.profit) >= 0 ? 'profit-positive' : 'profit-negative'}">
+                            ${parseFloat(trade.profit) >= 0 ? '+' : ''}$${trade.profit}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Ошибка загрузки сделок:', error);
+            }
+        }
+        
+        async function fetchSignals() {
+            try {
+                const signalsList = document.getElementById('signalsList');
+                signalsList.innerHTML = '<div class="loading">Генерация сигналов...</div>';
+                
+                const response = await fetch(`${API_URL}/signals`);
+                const signals = await response.json();
+                
+                signalsList.innerHTML = signals.map(signal => `
+                    <div class="signal-item">
+                        <div class="signal-header">
+                            <span style="font-weight: bold; font-size: 16px;">${signal.symbol}</span>
+                            <span class="signal-action action-${signal.action}">${signal.action.toUpperCase()}</span>
+                        </div>
+                        <div style="opacity: 0.8; font-size: 14px; margin-bottom: 5px;">
+                            Уверенность: ${signal.confidence}%
+                        </div>
+                        <div style="opacity: 0.7; font-size: 13px;">
+                            ${signal.reason}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Ошибка загрузки сигналов:', error);
+                document.getElementById('signalsList').innerHTML = '<div class="loading">Ошибка загрузки</div>';
+            }
+        }
+        
+        document.getElementById('startBtn').addEventListener('click', async () => {
+            try {
+                await fetch(`${API_URL}/settings/toggle-bot`, { method: 'POST' });
+                tg.showAlert('✅ Бот запущен!');
+                fetchStats();
+            } catch (error) {
+                tg.showAlert('❌ Ошибка запуска бота');
+            }
+        });
+        
+        document.getElementById('stopBtn').addEventListener('click', async () => {
+            try {
+                await fetch(`${API_URL}/settings/toggle-bot`, { method: 'POST' });
+                tg.showAlert('⏹️ Бот остановлен');
+                fetchStats();
+            } catch (error) {
+                tg.showAlert('❌ Ошибка остановки бота');
+            }
+        });
+        
+        document.getElementById('analyzeBtn').addEventListener('click', async () => {
+            tg.showPopup({
+                title: 'Анализ рынка',
+                message: 'Введите символ для анализа (например: BTC/USDT)',
+                buttons: [
+                    {type: 'default', text: 'BTC/USDT'},
+                    {type: 'default', text: 'ETH/USDT'},
+                    {type: 'cancel', text: 'Отмена'}
+                ]
+            }, (buttonId) => {
+                if (buttonId !== 'cancel') {
+                    const symbol = buttonId;
+                    fetch(`${API_URL}/analysis/generate`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ symbol })
+                    }).then(() => {
+                        tg.showAlert('✅ Анализ выполнен!');
+                    }).catch(() => {
+                        tg.showAlert('❌ Ошибка анализа');
+                    });
+                }
+            });
+        });
+        
+        document.getElementById('signalsBtn').addEventListener('click', () => {
+            const card = document.getElementById('signalsCard');
+            if (card.style.display === 'none') {
+                card.style.display = 'block';
+                fetchSignals();
+            } else {
+                card.style.display = 'none';
+            }
+        });
+        
+        fetchStats();
+        fetchTrades();
+        
+        setInterval(() => {
+            fetchStats();
+            fetchTrades();
+        }, 10000);
+        
+        tg.ready();
+    </script>
+</body>
+</html>
+
